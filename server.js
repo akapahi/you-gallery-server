@@ -118,6 +118,19 @@ const createNewVisitor = async (uid) => {
   await newVisitor.save();
 };
 
+app.use("/ota", express.static("ota"));
+
+app.get("/ota/firmware.json", (req, res) => {
+  res.json({
+    Configurations: [
+      {
+        Version: "1.0.0",
+        URL: "http://mainframe.local:3001/ota/firmware.bin"
+      }
+    ]
+  });
+});
+
 app.post("/card/activate", async (req, res) => {
   try {
     const { UID, Token } = req.body;
