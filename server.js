@@ -35,6 +35,13 @@ const deviceSchema = new mongoose.Schema({
     required: true,
   },
 
+  macAddress: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true,
+  },
+
   status: {
     type: String,
     enum: ["ok", "warning", "error"],
@@ -67,6 +74,7 @@ const visitorSchema = new mongoose.Schema({
   UID: {
     type: String,
     required: [true, "UID is required"],
+    index: true,
   },
   isInside: Boolean,
   appData: { type: Object, default: {} },
@@ -77,6 +85,7 @@ const cardSchema = new mongoose.Schema({
   UID: {
     type: String,
     required: [true, "UID is required"],
+    index: true,
   },
   Token: Number,
   isCardActive: Boolean,
@@ -87,6 +96,7 @@ const eventSchema = new mongoose.Schema({
   UID: {
     type: String,
     required: [true, "UID is required"],
+    index: true,
   },
   stationId: {
     type: String,
@@ -129,6 +139,40 @@ app.get("/ota/firmware.json", (req, res) => {
       }
     ]
   });
+});
+
+app.post("/device/register", async (req, res) => {
+  try {
+    const { macAddress } = req.body;
+
+    const device = await Device.findOne({
+      macAddress: macAddress.toUpperCase(),
+    });
+
+    if (!device) {
+      return res.status(404).json({
+        error: "Device not provisioned",
+      });
+    }
+
+    device.lastSeen = new Date();
+    await device.save();
+
+    res.status(200).json({
+      stationId: device.stationId,
+
+      config: {
+        otaEnabled: true,
+      },
+    });
+
+  } catch (err) {
+    debugLog("❌ Register error:", err);
+
+    res.status(500).json({
+      error: err.message,
+    });
+  }
 });
 
 app.post("/card/activate", async (req, res) => {
